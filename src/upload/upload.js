@@ -8,8 +8,12 @@ const { Title, Text } = Typography;
 
 const FileUploadPage = () => {
   const [fileList, setFileList] = useState([]);
+  const allowedFileTypes = ['image/jpeg', 'image/png', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
-  const handleChange = ({ file, fileList }) => {
+  const handleChange = ({ file, fileList = [] }) => {
+    if (!file) {
+      return;
+    }
     setFileList(fileList);
     if (file.status === 'done') {
       Message.success(`${file.name} 上传成功`);
@@ -19,18 +23,24 @@ const FileUploadPage = () => {
   };
 
   const handleRemove = (file) => {
+    if (!file) {
+      return;
+    }
     setFileList(fileList.filter(item => item.uid !== file.uid));
   };
 
   const beforeUpload = (file) => {
-    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-    if (!isJpgOrPng) {
-      Message.error('你只能上传 JPG/PNG 文件!');
+    if (!file) {
       return false;
     }
-    const isLt2M = file.size / 1024 / 1024 < 20;
-    if (!isLt2M) {
-      Message.error('图片必须小于 20MB!');
+    const isAllowedFileType = allowedFileTypes.includes(file.type);
+    if (!isAllowedFileType) {
+      Message.error('你只能上传以下类型的文件: JPG, PNG, PDF, TXT, DOC, DOCX!');
+      return false;
+    }
+    const isLt20M = file.size / 1024 / 1024 < 200;
+    if (!isLt20M) {
+      Message.error('文件必须小于 200MB!');
       return false;
     }
     return true;
@@ -41,23 +51,17 @@ const FileUploadPage = () => {
       <div className="header-container">
         <Title heading={2} className="title">文件上传</Title>
         <Text type="secondary" className="description">
-          请上传 JPG 或 PNG 格式的文件，大小不超过 20MB。
+          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX，大小不超过 200MB。
         </Text>
       </div>
       <Divider />
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div className="upload-button-container">
           <Upload
-            action="/upload"  // 替换为你的上传接口
-            fileList={fileList}
+            action="/upload"  // 确保是正确的上传URL
             onChange={handleChange}
             onRemove={handleRemove}
             beforeUpload={beforeUpload}
-            showUploadList={{
-              showRemoveIcon: true,
-              showPreviewIcon: true,
-              showDownloadIcon: false,
-            }}
             progress={{
               strokeWidth: 2,
               showText: true,
@@ -67,7 +71,7 @@ const FileUploadPage = () => {
             <Button type="primary" icon={<IconUpload />} className="upload-button">点击上传文件</Button>
           </Upload>
         </div>
-        {fileList.map(file => (
+        {fileList.length > 0 && fileList.map(file => (
           file.status === 'uploading' && (
             <Progress 
               key={file.uid}
