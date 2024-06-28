@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Button, Message, Progress, Divider, Typography, Space } from '@arco-design/web-react';
-import { IconUpload } from '@arco-design/web-react/icon';
+import { IconUpload, IconCloudDownload } from '@arco-design/web-react/icon';
 import '@arco-design/web-react/dist/css/arco.css';
 import './upload.css'; // 引入CSS文件
 
@@ -20,6 +20,18 @@ const FileUploadPage = () => {
     } else if (file.status === 'error') {
       Message.error(`${file.name} 上传失败`);
     }
+  };
+
+  const navigateToDownloadStation = () => {
+    // 这里使用React Router的useHistory hook进行导航，如果您的项目中使用了React Router
+    // 如果没有使用React Router，请根据实际情况调整导航逻辑，例如使用window.location.href
+    // 注意：此段代码仅为示例，具体实现需依据您的路由配置
+    // import { useHistory } from 'react-router-dom';
+    // const history = useHistory();
+    // history.push('/list');
+    
+    // 或者，简单使用window.location.href进行跳转
+    window.location.href = '/list';
   };
 
   const handleRemove = (file) => {
@@ -83,6 +95,14 @@ const FileUploadPage = () => {
           )
         ))}
       </Space>
+      <Button 
+        type="primary" 
+        onClick={navigateToDownloadStation}
+        icon={<IconCloudDownload />}
+        style={{ marginTop: '16px' }} // 根据需要调整样式
+      >
+        前往下载
+      </Button>
     </div>
   );
 };

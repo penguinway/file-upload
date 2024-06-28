@@ -27,8 +27,11 @@ func main() {
 	router.LoadHTMLGlob("web/index.html")
 	router.Static("static", "web/static")
 
-	// GET / 显示 index.html
+	// GET / /list 显示 index.html
 	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
+	router.GET("/list", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
