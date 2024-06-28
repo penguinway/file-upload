@@ -1,11 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import FileUploadPage from './upload/upload'
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
 import "@arco-design/web-react/dist/css/arco.css";
 
 const root = createRoot(document.getElementById("root"));
 root.render(
     <React.StrictMode>
-        <FileUploadPage />
+        <App />
     </React.StrictMode>
 );

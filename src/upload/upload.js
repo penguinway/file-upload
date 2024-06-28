@@ -38,9 +38,9 @@ const FileUploadPage = () => {
       Message.error('你只能上传以下类型的文件: JPG, PNG, PDF, TXT, DOC, DOCX!');
       return false;
     }
-    const isLt20M = file.size / 1024 / 1024 < 200;
+    const isLt20M = file.size / 1024 / 1024 < 50;
     if (!isLt20M) {
-      Message.error('文件必须小于 200MB!');
+      Message.error('文件必须小于 50MB!');
       return false;
     }
     return true;
@@ -51,7 +51,7 @@ const FileUploadPage = () => {
       <div className="header-container">
         <Title heading={2} className="title">文件上传</Title>
         <Text type="secondary" className="description">
-          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX，大小不超过 200MB。
+          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX，大小不超过 50MB。
         </Text>
       </div>
       <Divider />
