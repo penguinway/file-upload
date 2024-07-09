@@ -8,7 +8,30 @@ const { Title, Text } = Typography;
 
 const FileUploadPage = () => {
   const [fileList, setFileList] = useState([]);
-  const allowedFileTypes = ['image/jpeg', 'image/png', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const allowedFileTypes = [
+  'image/jpeg',
+  'image/png',
+  'application/pdf',
+  'text/plain',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.android.package-archive', 
+  'application/x-msdownload',
+  'application/x-rar-compressed',
+  'application/zip',
+  'video/mp4',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-flac',
+  'text/markdown',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', 
+  'application/vnd.ms-powerpoint',           
+];
+
+const AllowType = [
+  'JPG', 'PNG', 'PDF', 'TXT', 'DOC', 'DOCX', 'APK', 'EXE', 'RAR', 'ZIP', 'MP4', 'MP3', 'WAV', 'FLAC', 'MD', 'PPT', 'XLSX'
+];
 
   const handleChange = ({ file, fileList = [] }) => {
     if (!file) {
@@ -47,7 +70,8 @@ const FileUploadPage = () => {
     }
     const isAllowedFileType = allowedFileTypes.includes(file.type);
     if (!isAllowedFileType) {
-      Message.error('你只能上传以下类型的文件: JPG, PNG, PDF, TXT, DOC, DOCX!');
+      const allowedTypesString = AllowType.join(', ');
+      Message.error(`文件类型不被允许。允许的文件类型有：${allowedTypesString}`);
       return false;
     }
     const isLt20M = file.size / 1024 / 1024 < 50;
@@ -63,7 +87,7 @@ const FileUploadPage = () => {
       <div className="header-container">
         <Title heading={2} className="title">文件上传</Title>
         <Text type="secondary" className="description">
-          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX，大小不超过 50MB。
+          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX, APK, EXE, RAR, ZIP, MP4, MP3, WAV, FLAC, MD, PPT, XLSX,大小不超过 50MB。
         </Text>
       </div>
       <Divider />
