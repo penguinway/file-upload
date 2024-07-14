@@ -1,15 +1,34 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 )
+
+var db *sql.DB
+
+func initDB() {
+	var err error
+	db, err = sql.Open("sqlite3", "./clipboard.db")
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS clipboard (id INTEGER PRIMARY KEY AUTOINCREMENT, context TEXT NOT NULL, time TIMESTAMP NOT NULL
+                         DEFAULT (datetime('now', 'localtime') ))`)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func main() {
 	// Print the current working directory for debugging
@@ -21,7 +40,7 @@ func main() {
 
 	router := gin.Default()
 
-	// Allow all origins
+	// 允许跨域
 	router.Use(cors.Default())
 
 	router.LoadHTMLGlob("web/index.html")
@@ -32,6 +51,10 @@ func main() {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 	router.GET("/list", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
+
+	router.GET("/clipboard", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
@@ -60,7 +83,7 @@ func main() {
 		files := form.File["file"]
 
 		if len(files) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "No files uploaded"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无文件被上传"})
 			return
 		}
 
@@ -72,24 +95,114 @@ func main() {
 			}
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Files uploaded successfully!"})
+		c.JSON(http.StatusOK, gin.H{"message": "文件成功上传"})
 	})
 
 	// GET /download?filename= 下载指定文件
 	router.GET("/download", func(c *gin.Context) {
 		filename := c.Query("filename")
 		if filename == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Filename is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "需要文件名"})
 			return
 		}
 
 		filePath := filepath.Join("uploads", filename)
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "未找到文件"})
 			return
 		}
 
 		c.File(filePath)
+	})
+
+	// POST /clipboard 存入剪贴板
+	initDB()
+	defer db.Close()
+	router.POST("/clipboard", func(c *gin.Context) {
+		// Get the context from the form data
+		context := c.PostForm("context")
+		if context == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "需要文字"})
+			return
+		}
+
+		// Insert the context into the clipboard table
+		_, err := db.Exec("INSERT INTO clipboard (context) VALUES (?)", context)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"message": "剪贴板记录已创建"})
+	})
+
+	type ClipboardEntry struct {
+		ID      int       `json:"id"`
+		Context string    `json:"context"`
+		Time    time.Time `json:"time"`
+	}
+	// GET /clipboard/info 获取剪贴板
+	router.GET("/clipboard/info", func(c *gin.Context) {
+		// Query the clipboard table to get all entries
+		rows, err := db.Query("SELECT id, context, time FROM clipboard")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer func(rows *sql.Rows) {
+			err := rows.Close()
+			if err != nil {
+				panic(err)
+			}
+		}(rows)
+
+		// Create a slice to hold the clipboard entries
+		var entries []ClipboardEntry
+
+		// Iterate over the rows and add each entry to the slice
+		for rows.Next() {
+			var entry ClipboardEntry
+			err := rows.Scan(&entry.ID, &entry.Context, &entry.Time)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			entries = append(entries, entry)
+		}
+
+		// Check for any errors during iteration
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Return the entries as JSON
+		c.JSON(http.StatusOK, gin.H{"data": entries})
+	})
+
+	router.DELETE("/clipboard/delete", func(c *gin.Context) {
+		// Get the ID from the query parameter
+		idStr := c.Query("id")
+		if idStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请求需要ID"})
+			return
+		}
+
+		// Convert the ID string to an integer
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无效ID"})
+			return
+		}
+
+		// Execute the DELETE statement
+		_, err = db.Exec("DELETE FROM clipboard WHERE id = ?", id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Return a success message
+		c.JSON(http.StatusOK, gin.H{"message": "剪贴板数据已经删除"})
 	})
 
 	router.Run(":8080")

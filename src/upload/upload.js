@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Upload, Button, Message, Progress, Divider, Typography, Space } from '@arco-design/web-react';
-import { IconUpload, IconCloudDownload } from '@arco-design/web-react/icon';
+import { IconUpload, IconCloudDownload, IconCopy } from '@arco-design/web-react/icon';
 import '@arco-design/web-react/dist/css/arco.css';
 import './upload.css'; // 引入CSS文件
 
 const { Title, Text } = Typography;
-
 const FileUploadPage = () => {
   const [fileList, setFileList] = useState([]);
 const allowedFileTypes = [
@@ -55,7 +54,18 @@ const AllowType = [
     
     // 或者，简单使用window.location.href进行跳转
     window.location.href = '/list';
+    // history.push('/list');
   };
+
+  const navigateToClipBoard = () => {
+    // 这里使用React Router的useHistory hook进行导航，如果您的项目中使用了React Router
+    // 如果没有使用React Router，请根据实际情况调整导航逻辑，例如使用window.location.href
+    // 注意：此段代码仅为示例，具体实现需依据您的路由配置
+    // import { useHistory } from 'react-router-dom';
+    // const history = useHistory();
+    window.location.href = '/clipboard';
+    // history.push('/clipboard');
+  }
 
   const handleRemove = (file) => {
     if (!file) {
@@ -126,6 +136,14 @@ const AllowType = [
         style={{ marginTop: '16px' }} // 根据需要调整样式
       >
         前往下载
+      </Button>
+      <Button 
+        type="primary" 
+        onClick={navigateToClipBoard}
+        icon={<IconCopy />}
+        style={{ marginTop: '16px' }} // 根据需要调整样式
+      >
+        前往剪贴板
       </Button>
     </div>
   );
