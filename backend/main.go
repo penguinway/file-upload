@@ -107,12 +107,21 @@ func main() {
 		}
 
 		filePath := filepath.Join("uploads", filename)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "未找到文件"})
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "未找到文件"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "文件错误"})
+			}
 			return
 		}
 
-		c.File(filePath)
+		// 使用 c.FileAttachment 并传递原始文件名作为第二个参数
+		c.FileAttachment(filePath, filename)
+
+		// 设置 Content-Length 头部以优化下载体验
+		c.Writer.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
 	})
 
 	// POST /clipboard 存入剪贴板
