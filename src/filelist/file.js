@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, List, Button, Message, Space } from '@arco-design/web-react';
-import { IconDownload } from '@arco-design/web-react/icon';
+import { Typography, List, Button, Message, Space, Modal, Input } from '@arco-design/web-react';
+import { IconDownload, IconDelete } from '@arco-design/web-react/icon';
 import axios from 'axios';
 import './file.css'; // 引入CSS文件
 
 const { Title, Text } = Typography;
+const local = 'http://localhost:8080';
 
 const Filelist = () => {
   const [fileList, setFileList] = useState([]);
+  const [password, setPassword] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [currentFile, setCurrentFile] = useState('');
 
   useEffect(() => {
     // 获取文件列表
-    axios.get('/file')
+    axios.get(`${local}/file`)
       .then(response => {
         setFileList(response.data.files);
       })
@@ -23,7 +27,30 @@ const Filelist = () => {
 
   const handleDownload = (filename) => {
     // 下载文件
-    window.location.href = `/download?filename=${filename}`;
+    window.location.href = `${local}/download?filename=${filename}`;
+  };
+
+  const handleDelete = () => {
+    // 删除文件
+    axios.post(`${local}/list/delete`, {
+      filename: currentFile,
+      password: password,
+    })
+      .then(response => {
+        Message.success(response.data.message);
+        setFileList(fileList.filter(file => file !== currentFile));
+        setVisible(false);
+        setPassword('');
+      })
+      .catch(error => {
+        Message.error('删除失败');
+        console.error(error.response.data.error);
+      });
+  };
+
+  const showDeleteConfirm = (filename) => {
+    setCurrentFile(filename);
+    setVisible(true);
   };
 
   return (
@@ -41,7 +68,10 @@ const Filelist = () => {
             <List.Item
               key={item}
               extra={
-                <Button type="primary" icon={<IconDownload />} onClick={() => handleDownload(item)}>下载</Button>
+                <>
+                  <Button onClick={() => showDeleteConfirm(item)}>{<IconDelete />}</Button>
+                  <Button type="primary" icon={<IconDownload />} onClick={() => handleDownload(item)}>下载</Button>
+                </>
               }
             >
               <Typography.Text>{item}</Typography.Text>
@@ -49,6 +79,20 @@ const Filelist = () => {
           )}
         />
       </Space>
+      <Modal
+        title="删除文件"
+        visible={visible}
+        onOk={handleDelete}
+        onCancel={() => setVisible(false)}
+        okText="确定"
+        cancelText="取消"
+      >
+        <Input.Password
+          placeholder="请输入密码"
+          value={password}
+          onChange={(value) => setPassword(value)}
+        />
+      </Modal>
     </div>
   );
 };

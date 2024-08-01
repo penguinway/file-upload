@@ -1,18 +1,19 @@
 package main
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
-
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
@@ -30,7 +31,27 @@ func initDB() {
 	}
 }
 
+type Config struct {
+	PasswordHash string `json:"passwordHash"`
+}
+
+var config Config
+
+func init() {
+	// Load the configuration file
+	file, err := os.ReadFile("config.json")
+	if err != nil {
+		panic("Unable to read configuration file")
+	}
+
+	err = json.Unmarshal(file, &config)
+	if err != nil {
+		panic("Unable to parse configuration file")
+	}
+}
+
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	// Print the current working directory for debugging
 	wd, err := os.Getwd()
 	if err != nil {
@@ -39,34 +60,32 @@ func main() {
 	fmt.Println("Current working directory:", wd)
 
 	router := gin.Default()
-
 	// 允许跨域
 	router.Use(cors.Default())
 
 	router.LoadHTMLGlob("web/index.html")
 	router.Static("static", "web/static")
 
-	// GET / /list 显示 index.html
+	// GET / or /list or /clipboard 显示 index.html
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 	router.GET("/list", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
-
 	router.GET("/clipboard", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
 	// GET /file 返回目录下的文件列表
 	router.GET("/file", func(c *gin.Context) {
-		files, err := ioutil.ReadDir("./uploads")
+		files, err := os.ReadDir("./uploads")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		filenames := []string{}
+		var filenames []string
 		for _, file := range files {
 			filenames = append(filenames, file.Name())
 		}
@@ -122,6 +141,44 @@ func main() {
 
 		// 设置 Content-Length 头部以优化下载体验
 		c.Writer.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
+	})
+
+	// GET /list/delete?filename= 删除指定文件
+	router.POST("/list/delete", func(c *gin.Context) {
+		var request struct {
+			Filename string `json:"filename"`
+			Password string `json:"password"`
+		}
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+			return
+		}
+
+		// Verify password
+		passwordHash := sha256.Sum256([]byte(request.Password))
+		fmt.Println(hex.EncodeToString(passwordHash[:]))
+		if hex.EncodeToString(passwordHash[:]) != config.PasswordHash {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "密码错误"})
+			return
+		}
+
+		// Construct the file path
+		filePath := filepath.Join("uploads", request.Filename)
+
+		// Check if the file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "未找到文件"})
+			return
+		}
+
+		// Delete the file
+		err = os.Remove(filePath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "删除文件失败，请联系站点管理员"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "成功删除文件"})
 	})
 
 	// POST /clipboard 存入剪贴板
