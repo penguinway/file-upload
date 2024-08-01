@@ -5,8 +5,8 @@ import axios from 'axios';
 
 const { TextArea } = Input;
 const ClipboardContext = React.createContext();
-const local = "http://localhost:8080"
-// const local = ""
+// const local = "http://localhost:8080"
+const local = ""
 const ClipboardProvider = ({ children }) => {
   const [clipboardData, setClipboardData] = useState([]);
   const [loading, setLoading] = useState(false);

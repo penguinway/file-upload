@@ -5,7 +5,8 @@ import axios from 'axios';
 import './file.css'; // 引入CSS文件
 
 const { Title, Text } = Typography;
-const local = 'http://localhost:8080';
+// const local = 'http://localhost:8080';
+const local = ''
 
 const Filelist = () => {
   const [fileList, setFileList] = useState([]);
