@@ -5,32 +5,32 @@ import '@arco-design/web-react/dist/css/arco.css';
 import './upload.css'; // 引入CSS文件
 
 const { Title, Text } = Typography;
+
 const FileUploadPage = () => {
   const [fileList, setFileList] = useState([]);
-const allowedFileTypes = [
-  'image/jpeg',
-  'image/png',
-  'application/pdf',
-  'text/plain',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.android.package-archive', 
-  'application/x-msdownload',
-  'application/x-rar-compressed',
-  'application/zip',
-  'video/mp4',
-  'audio/mpeg',
-  'audio/wav',
-  'audio/x-flac',
-  'text/markdown',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation', 
-  'application/vnd.ms-powerpoint',           
-];
 
-const AllowType = [
-  'JPG', 'PNG', 'PDF', 'TXT', 'DOC', 'DOCX', 'APK', 'EXE', 'RAR', 'ZIP', 'MP4', 'MP3', 'WAV', 'FLAC', 'MD', 'PPT', 'XLSX'
-];
+  // 定义文件类型黑名单
+  const blockedFileTypes = [
+    'application/octet-stream', // 通用二进制文件类型
+    'application/x-sh', // shell 脚本
+    'application/x-bat', // 批处理脚本
+    'application/x-msdos-program', // DOS 程序
+    'application/x-php', // PHP 脚本
+    'application/x-zsh', // Zsh 脚本
+    'application/x-bash', // Bash 脚本
+    'application/x-executable', // 编译的可执行文件
+    'application/x-object', // 对象文件
+    'application/x-sharedlib', // 共享库文件
+    'text/x-makefile', // Makefile
+    'text/x-shellscript', // shell 脚本（文本格式）
+    'application/x-powershell', // PowerShell 脚本
+    'text/html', // HTML 文件
+    'text/x-vbscript', // VBScript 文件
+    'application/vbscript', // VBScript 文件
+    'application/x-applescript', // AppleScript 文件
+    'text/x-shellscript', // Shell 历史文件
+    'application/bin', // 二进制数据文件
+  ];
 
   const handleChange = ({ file, fileList = [] }) => {
     if (!file) {
@@ -45,26 +45,11 @@ const AllowType = [
   };
 
   const navigateToDownloadStation = () => {
-    // 这里使用React Router的useHistory hook进行导航，如果您的项目中使用了React Router
-    // 如果没有使用React Router，请根据实际情况调整导航逻辑，例如使用window.location.href
-    // 注意：此段代码仅为示例，具体实现需依据您的路由配置
-    // import { useHistory } from 'react-router-dom';
-    // const history = useHistory();
-    // history.push('/list');
-    
-    // 或者，简单使用window.location.href进行跳转
     window.location.href = '/list';
-    // history.push('/list');
   };
 
   const navigateToClipBoard = () => {
-    // 这里使用React Router的useHistory hook进行导航，如果您的项目中使用了React Router
-    // 如果没有使用React Router，请根据实际情况调整导航逻辑，例如使用window.location.href
-    // 注意：此段代码仅为示例，具体实现需依据您的路由配置
-    // import { useHistory } from 'react-router-dom';
-    // const history = useHistory();
     window.location.href = '/clipboard';
-    // history.push('/clipboard');
   }
 
   const handleRemove = (file) => {
@@ -78,14 +63,13 @@ const AllowType = [
     if (!file) {
       return false;
     }
-    const isAllowedFileType = allowedFileTypes.includes(file.type);
-    if (!isAllowedFileType) {
-      const allowedTypesString = AllowType.join(', ');
-      Message.error(`文件类型不被允许。允许的文件类型有：${allowedTypesString}`);
+    const isBlockedFileType = blockedFileTypes.includes(file.type);
+    if (isBlockedFileType) {
+      Message.error(`文件类型不被允许。被阻止的文件类型：${file.type}`);
       return false;
     }
-    const isLt20M = file.size / 1024 / 1024 < 50;
-    if (!isLt20M) {
+    const isLt50M = file.size / 1024 / 1024 < 50;
+    if (!isLt50M) {
       Message.error('文件必须小于 50MB!');
       return false;
     }
@@ -97,7 +81,7 @@ const AllowType = [
       <div className="header-container">
         <Title heading={2} className="title">文件上传</Title>
         <Text type="secondary" className="description">
-          请上传以下格式的文件: JPG, PNG, PDF, TXT, DOC, DOCX, APK, EXE, RAR, ZIP, MP4, MP3, WAV, FLAC, MD, PPT, XLSX,大小不超过 50MB。
+          请上传大小不超过 50MB 的文件。被阻止的文件类型包括： SH, BASH, PHP, BAT, HTML 等。
         </Text>
       </div>
       <Divider />
